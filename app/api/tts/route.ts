@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const GEMINI_TTS_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent";
+const GEMINI_TTS_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-preview-tts:generateContent";
 
 function pcmToWav(pcmBase64: string, sampleRate = 24000, channels = 1, bitsPerSample = 16): string {
   const pcm = Buffer.from(pcmBase64, "base64");
