@@ -94,46 +94,40 @@ function CopyBtn({ text }: { text: string }) {
   );
 }
 
-const VOICE_PREFS: Record<string, string[]> = {
-  en: ["Google US English","Samantha","Karen","en-US","en-GB"],
-  ko: ["Google 한국의","Yuna","ko-KR"],
-  ja: ["Google 日本語","Kyoko","Otoya","ja-JP"],
-  zh: ["Google 普通话","Tingting","zh-CN","zh-TW"],
-  es: ["Google español","Monica","es-ES","es-MX"],
-  fr: ["Google français","Amelie","fr-FR"],
-  de: ["Google Deutsch","Anna","de-DE"],
-  th: ["Google ภาษาไทย","th-TH"],
-  vi: ["Google Tiếng Việt","vi-VN"],
-};
-const voiceCache: Record<string, SpeechSynthesisVoice> = {};
-
-function getBestVoice(lang: string) {
-  if (voiceCache[lang]) return voiceCache[lang];
-  const voices = window.speechSynthesis.getVoices();
-  const prefs = VOICE_PREFS[lang] || [];
-  for (const pref of prefs) {
-    const v = voices.find(v => v.name.includes(pref) || v.lang === pref);
-    if (v) { voiceCache[lang] = v; return v; }
-  }
-  const fallback = voices.find(v => v.lang.startsWith(lang));
-  if (fallback) { voiceCache[lang] = fallback; return fallback; }
-  return null;
-}
-
-function speakWithBestVoice(text: string, lang: string) {
-  const s = window.speechSynthesis;
-  if (!s) return;
-  s.cancel();
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = lang; u.rate = 0.92; u.pitch = 1.0;
-  const trySpeak = () => { const v = getBestVoice(lang); if (v) u.voice = v; s.speak(u); };
-  if (s.getVoices().length === 0) { s.onvoiceschanged = () => { trySpeak(); s.onvoiceschanged = null; }; }
-  else trySpeak();
-}
-
 function PlayBtn({ text, lang }: { text: string; lang: string }) {
-  const handle = useCallback(() => speakWithBestVoice(text, lang), [text, lang]);
-  return <button onClick={handle} title="Listen" style={{ ...iconBtnStyle, color:C.textMuted }}><Volume2 size={18} strokeWidth={1.5} /></button>;
+  const [playing, setPlaying] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const handle = useCallback(async () => {
+    if (playing) {
+      audioRef.current?.pause();
+      setPlaying(false);
+      return;
+    }
+    setPlaying(true);
+    try {
+      const res = await fetch("/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, lang }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.audio) throw new Error(data.error || "TTS failed");
+      const audio = new Audio(`data:${data.mimeType};base64,${data.audio}`);
+      audioRef.current = audio;
+      audio.onended = () => setPlaying(false);
+      audio.onerror = () => setPlaying(false);
+      await audio.play();
+    } catch {
+      setPlaying(false);
+    }
+  }, [text, lang, playing]);
+
+  return (
+    <button onClick={handle} title={playing ? "Stop" : "Listen"} style={{ ...iconBtnStyle, color: playing ? C.text : C.textMuted }}>
+      {playing ? <Spinner size={14} color={C.text} /> : <Volume2 size={18} strokeWidth={1.5} />}
+    </button>
+  );
 }
 
 function StarBtn({ active, onToggle }: { active: boolean; onToggle: () => void }) {
