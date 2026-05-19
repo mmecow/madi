@@ -210,8 +210,9 @@ function TranslateTab({ history, setHistory, pendingLoad, setPendingLoad, custom
     const srcHint = sourceLang !== "auto" ? `Input lang:${LANGUAGES.find(l => l.code === sourceLang)?.label}.` : "";
     const prompt = `Translate for MADI. JSON only, no markdown.
 Input:"${inputText}" To:${targetLang} Tone:${to?.label} ${srcHint}
-ROM=target-lang pronunciation in input-lang script
-{"dl":"<lang in Korean>","dlc":"<ISO>","t":"<translation>","r":"<rom>","rp":[{"t":"<reply1>","r":"<rom>","m":"<meaning>"},{"t":"<reply2>","r":"<rom>","m":"<meaning>"},{"t":"<reply3>","r":"<rom>","m":"<meaning>"}],"v":[{"w":"<word>","m":"<meaning>","r":"<rom>"},{"w":"","m":"","r":""},{"w":"","m":"","r":""},{"w":"","m":"","r":""}]}`;
+ROM=pronunciation of target-lang text written in input-lang script.
+rp rules (STRICTLY follow): rp[].t=reply in target lang, rp[].r=how to READ rp[].t written in input-lang script, rp[].m=meaning of rp[].t in input lang.
+{"dl":"<lang in Korean>","dlc":"<ISO>","t":"<translation>","r":"<ROM of translation>","rp":[{"t":"<reply in target lang>","r":"<how to read reply in input-lang script>","m":"<reply meaning in input lang>"},{"t":"<reply in target lang>","r":"<how to read reply in input-lang script>","m":"<reply meaning in input lang>"},{"t":"<reply in target lang>","r":"<how to read reply in input-lang script>","m":"<reply meaning in input lang>"}],"v":[{"w":"<word>","m":"<meaning>","r":"<rom>"},{"w":"","m":"","r":""},{"w":"","m":"","r":""},{"w":"","m":"","r":""}]}`;
     try {
       const raw = await callAPI(prompt);
       const p = JSON.parse(raw.replace(/```json|```/g, "").trim());
